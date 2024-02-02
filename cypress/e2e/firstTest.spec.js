@@ -3,10 +3,11 @@
 describe('Test with backend', () => {
 
   beforeEach('login to application', () => {
+    cy.intercept('GET', 'https://conduit-api.bondaracademy.com/api/tags', {fixture: 'tags.json'})
     cy.loginToApplication()
   })
 
-  it.only('verify correct request and response', () => {
+  it('verify correct request and response', () => {
 
     // 1. define the intercept before the call
     cy.intercept('POST', 'https://conduit-api.bondaracademy.com/api/articles/').as('postArticles') // we need to use intercept method before the steps.
@@ -25,6 +26,38 @@ describe('Test with backend', () => {
       expect(xhr.request.body.article.body).to.equal('This is a body of the article')
       expect(xhr.response.body.article.description).to.equal('This is a description')
     })
+  })
+
+  // mocking api calls
+  it('verify populer tags are displayed', () => {
+    // we create new file in fixtures folder as mock datas, added cy.intercept() into beforeEach method.
+    cy.log('we logged in')
+    cy.get('.tag-list')
+    .should('contain', 'cypress')
+    .and('contain', 'automation')
+    .and('contain', 'testing')
+
+  })
+
+  it.only('verify global feed likes count', () => {
+    cy.intercept('GET', 'https://conduit-api.bondaracademy.com/api/articles/feed*', {"articles":[],"articlesCount":0})
+    cy.intercept('GET', 'https://conduit-api.bondaracademy.com/api/articles*', {fixture: 'articles.json'})
+
+    cy.contains('Global Feed').click()
+    cy.get('app-article-list button').then(heartList => {
+      expect(heartList[0]).to.contain('1') // 1 favorites
+      expect(heartList[1]).to.contain('5') // 2 favorites
+    })
+
+    // reading fixture files in cypress
+    cy.fixture('articles').then(file => {
+      const articleLink = file.articles[1].slug
+      file.articles[1].favoritesCount = 6 // ?? Note: didn't understand exactly
+      cy.intercept('POST', 'https://conduit-api.bondaracademy.com/api/articles/' + articleLink + '/favorite', file)
+    })
+
+    // validation
+    cy.get('app-article-list button').eq(1).click().should('contain', '6')
 
   })
 

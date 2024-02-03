@@ -3,7 +3,7 @@
 describe('Test with backend', () => {
 
   beforeEach('login to application', () => {
-    cy.intercept('GET', 'https://conduit-api.bondaracademy.com/api/tags', {fixture: 'tags.json'})
+    cy.intercept({method: 'GET', path: 'tags'}, {fixture: 'tags.json'})
     cy.loginToApplication()
   })
 
@@ -28,6 +28,29 @@ describe('Test with backend', () => {
     })
   })
 
+  it.only('intercepting and modifying the request and response', () => {
+
+    // 1. define the intercept before the call
+    cy.intercept('POST', 'https://conduit-api.bondaracademy.com/api/articles/', (req) => {
+      req.body.article.description = "This is a description 2" // we will write This is a description on browser but it will intercept and modify it, will ad "2" to the end
+    }).as('postArticles') // we need to use intercept method before the steps.
+
+    // 2. perform the api call
+    cy.contains('New Article').click()
+    cy.get('[formcontrolname="title"]').type('This is the title')
+    cy.get('[formcontrolname="description"]').type('This is a description')
+    cy.get('[formcontrolname="body"]').type('This is a body of the article')
+    cy.contains('Publish Article').click()
+
+    // 3. validation
+    cy.wait('@postArticles').then( xhr => {
+      console.log(xhr)
+      expect(xhr.response.statusCode).to.equal(201)
+      expect(xhr.request.body.article.body).to.equal('This is a body of the article')
+      expect(xhr.response.body.article.description).to.equal('This is a description 2') // modified data expected
+    })
+  })
+
   // mocking api calls
   it('verify populer tags are displayed', () => {
     // we create new file in fixtures folder as mock datas, added cy.intercept() into beforeEach method.
@@ -39,7 +62,7 @@ describe('Test with backend', () => {
 
   })
 
-  it.only('verify global feed likes count', () => {
+  it('verify global feed likes count', () => {
     cy.intercept('GET', 'https://conduit-api.bondaracademy.com/api/articles/feed*', {"articles":[],"articlesCount":0})
     cy.intercept('GET', 'https://conduit-api.bondaracademy.com/api/articles*', {fixture: 'articles.json'})
 
@@ -60,6 +83,8 @@ describe('Test with backend', () => {
     cy.get('app-article-list button').eq(1).click().should('contain', '6')
 
   })
+
+  
 
 
 })

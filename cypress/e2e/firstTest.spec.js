@@ -14,7 +14,7 @@ describe('Test with backend', () => {
 
     // 2. perform the api call
     cy.contains('New Article').click()
-    cy.get('[formcontrolname="title"]').type('This is the title')
+    cy.get('[formcontrolname="title"]').type('This is the title v2')
     cy.get('[formcontrolname="description"]').type('This is a description')
     cy.get('[formcontrolname="body"]').type('This is a body of the article')
     cy.contains('Publish Article').click()
@@ -86,13 +86,6 @@ describe('Test with backend', () => {
 
   it('delete a new article in a global feed', () => {
 
-    const userCredentials = {
-      "user": {
-        "email": "erdem@test.com",
-        "password": "erdembke"
-      }
-    }
-
     const bodyRequest = {
       "article": {
         "title":"Cypress Article Title",
@@ -101,10 +94,8 @@ describe('Test with backend', () => {
         "tagList":[]
       }
     }
-
-    cy.request('POST', 'https://conduit-api.bondaracademy.com/api/users/login', userCredentials)
-    .its('body').then(body => {
-      const token = body.user.token
+    
+    cy.get('@token').then(token => {
 
       cy.request({
         url: 'https://conduit-api.bondaracademy.com/api/articles/',
